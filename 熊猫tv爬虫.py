@@ -60,5 +60,6 @@ class Spider():
         self.__show(anchors)
 
 
-spider = Spider()
-spider.go()
+if __name__ == '__main__':
+    spider = Spider()
+    spider.go()
