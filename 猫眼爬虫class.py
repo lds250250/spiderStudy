@@ -6,17 +6,16 @@ from requests.exceptions import RequestException
 
 
 class Spider():
-    def __init__(self):
-        self.Url = 'http://maoyan.com/board/4?offset='
+    def __init__(self, offset):
+        self.Url = f'http://maoyan.com/board/4?offset={offset}'
         self.root_pattern = (
             '<dd>.*?board-index.*?>(\d+)</i>.*?data-src="(.*?)".*?name">' +
             '<a.*?>(.*?)</a>.*?star">(.*?)</p>.*?releasetime">(.*?)</p>' +
             '.*?integer">(.*?)</i>.*?fraction">(.*?)</i>.*?</dd>')
 
-    def __get_one_page(self, offset):
-        Url = f'{self.Url}{offset}'
+    def __get_one_page(self):
         try:
-            response = requests.get(Url)
+            response = requests.get(self.Url)
             if response.status_code == 200:
                 return response.text
             return None
@@ -43,13 +42,13 @@ class Spider():
             f.close()
 
     def go(self, offset):
-        html = self.__get_one_page(offset)
+        html = self.__get_one_page()
         for item in self.__parse_one_page(html):
             print(item)
             self.__write_to_file(item)
 
 
 if __name__ == '__main__':
-    spider = Spider()
     for i in range(10):
+        spider = Spider(i * 10)
         spider.go(i * 10)
