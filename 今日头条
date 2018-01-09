@@ -53,9 +53,8 @@ class Sprider():
         title = soup.select('title')[0].get_text()
         images_pattern = re.compile('parse\("(.*?)"\),', re.S)
         result = re.search(images_pattern, html)
-        json_1 = result.group(1).replace(r'\\\\', r'\\') 
         if result:
-            data = json.loads(result.group(1).replace(r'\\\\', r'\\'))
+            data = json.loads(result.group(1).replace('\\', ''))
             if data and 'sub_images' in data.keys():
                 sub_images = data.get('sub_images')
                 images = [item.get('url') for item in sub_images]
@@ -71,5 +70,5 @@ class Sprider():
 
 
 if __name__ == '__main__':
-    sprider = Sprider(0, '街拍')
+    sprider = Sprider(0, '美女')
     sprider.go()
