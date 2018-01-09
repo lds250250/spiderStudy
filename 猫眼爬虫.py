@@ -41,7 +41,7 @@ class Spider():
             f.write(json.dumps(content, ensure_ascii=False) + '\n')
             f.close()
 
-    def go(self, offset):
+    def go(self):
         html = self.__get_one_page()
         for item in self.__parse_one_page(html):
             print(item)
@@ -51,4 +51,4 @@ class Spider():
 if __name__ == '__main__':
     for i in range(10):
         spider = Spider(i * 10)
-        spider.go(i * 10)
+        spider.go()
