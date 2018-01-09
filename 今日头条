@@ -2,10 +2,12 @@ import json
 import re
 from urllib.parse import urlencode
 
+import pymongo
 import requests
+from bs4 import BeautifulSoup as bs
 from requests.exceptions import RequestException
 
-from bs4 import BeautifulSoup as bs
+from config import *
 
 
 class Sprider():
@@ -60,15 +62,23 @@ class Sprider():
                 images = [item.get('url') for item in sub_images]
                 return {'title': title, 'url': url, 'images': images}
 
+    def __save_to_mongo(self, result):
+        if db[MONGO_TABLE].insert(result):
+            print('存储到MongoDB成功', result)
+            return True
+        return False
+
     def go(self):
         html = self.__get_page_index()
         for url in self.__parse_page_index(html):
             html = self.__get_page_detail(url)
             if html:
                 result = self.__parse_page_detail(html, url)
-                print(result)
+                self.__save_to_mongo(result)
 
 
 if __name__ == '__main__':
+    client = pymongo.MongoClient(MONGO_URL)
+    db = client[MONGO_DB]
     sprider = Sprider(0, '美女')
     sprider.go()
