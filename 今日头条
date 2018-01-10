@@ -1,5 +1,9 @@
 import json
+import os
 import re
+from hashlib import md5
+from json.decoder import JSONDecodeError
+from multiprocessing import Pool
 from urllib.parse import urlencode
 
 import pymongo
@@ -7,7 +11,8 @@ import requests
 from bs4 import BeautifulSoup as bs
 from requests.exceptions import RequestException
 
-from config import *
+from config import (GROUP_END, GROUP_START, KEYWORD, MONGO_DB, MONGO_TABLE,
+                    MONGO_URL)
 
 
 class Sprider():
@@ -35,10 +40,13 @@ class Sprider():
             return None
 
     def __parse_page_index(self, html):
-        data = json.loads(html)
-        if data and 'data' in data.keys():
-            for item in data.get('data'):
-                yield item.get('article_url')
+        try:
+            data = json.loads(html)
+            if data and 'data' in data.keys():
+                for item in data.get('data'):
+                    yield item.get('article_url')
+        except JSONDecodeError:
+            pass
 
     def __get_page_detail(self, url):
         try:
@@ -60,7 +68,27 @@ class Sprider():
             if data and 'sub_images' in data.keys():
                 sub_images = data.get('sub_images')
                 images = [item.get('url') for item in sub_images]
+                for image in images:
+                    self.__download_image(image)
                 return {'title': title, 'url': url, 'images': images}
+
+    def __download_image(self, url):
+        print(f'正在下载 {url}')
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                self.__save_image(response.content)
+            return None
+        except RequestException:
+            print('请求图片失败', url)
+            return None
+
+    def __save_image(self, content):
+        file_path = f'{os.getcwd()}/{md5(content).hexdigest()}.jpg'
+        if not os.path.exists(file_path):
+            with open(file_path, 'wb') as f:
+                f.write(content)
+                f.close()
 
     def __save_to_mongo(self, result):
         if db[MONGO_TABLE].insert(result):
@@ -78,7 +106,9 @@ class Sprider():
 
 
 if __name__ == '__main__':
-    client = pymongo.MongoClient(MONGO_URL)
+    client = pymongo.MongoClient(MONGO_URL, connect=False)
     db = client[MONGO_DB]
-    sprider = Sprider(0, '美女')
-    sprider.go()
+    groups = [x * 20 for x in range(GROUP_START, GROUP_END)]
+    pool = Pool()
+    sprider = Sprider(groups, KEYWORD)
+    pool.map(sprider.go())
