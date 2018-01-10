@@ -3,7 +3,6 @@ import os
 import re
 from hashlib import md5
 from json.decoder import JSONDecodeError
-from multiprocessing import Pool
 from urllib.parse import urlencode
 
 import pymongo
@@ -17,6 +16,7 @@ from config import (GROUP_END, GROUP_START, KEYWORD, MONGO_DB, MONGO_TABLE,
 
 class Sprider():
     def __init__(self, offset, keyword):
+        self.offset = offset
         self.data = {
             'offset': offset,
             'format': 'json',
@@ -61,6 +61,7 @@ class Sprider():
     def __parse_page_detail(self, html, url):
         soup = bs(html, 'lxml')
         title = soup.select('title')[0].get_text()
+        self.title = title
         images_pattern = re.compile('parse\("(.*?)"\),', re.S)
         result = re.search(images_pattern, html)
         if result:
@@ -84,9 +85,14 @@ class Sprider():
             return None
 
     def __save_image(self, content):
-        file_path = f'{os.getcwd()}/{md5(content).hexdigest()}.jpg'
+        file_path = (f'{os.getcwd()}/{self.offset}/{self.title}')
         if not os.path.exists(file_path):
-            with open(file_path, 'wb') as f:
+            os.makedirs(file_path)
+        jpg_path = (
+            f'{os.getcwd()}/{self.offset}/{self.title}/{md5(content).hexdigest()}.jpg'
+        )
+        if not os.path.exists(jpg_path):
+            with open(jpg_path, 'wb') as f:
                 f.write(content)
                 f.close()
 
@@ -108,7 +114,7 @@ class Sprider():
 if __name__ == '__main__':
     client = pymongo.MongoClient(MONGO_URL, connect=False)
     db = client[MONGO_DB]
-    groups = [x * 20 for x in range(GROUP_START, GROUP_END)]
-    pool = Pool()
-    sprider = Sprider(groups, KEYWORD)
-    pool.map(sprider.go())
+    for x in range(GROUP_START, GROUP_END):
+        sprider = Sprider(3 * x, KEYWORD)
+        sprider.go()
+
