@@ -1,0 +1,1 @@
+mongod --bind_ip 0.0.0.0 -logpath D:\MongoDB\Server\3.6\data\logs\mongo.log --logappend --dbpath D:\MongoDB\Server\3.6\data\db --port 27017 --serviceName "MongoDB" --serviceDisplayName "MongoDB" -install
